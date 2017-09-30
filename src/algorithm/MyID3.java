@@ -31,7 +31,8 @@ public class MyID3
 	/** Class value if node is leaf. */
 	private double node_ClassValue;
 	
-
+	private double most_common_value;
+	
 
 	@Override
 	public String toSource(String arg0) throws Exception {
@@ -59,6 +60,8 @@ public class MyID3
 	    data = new Instances(data);
 	    data.deleteWithMissingClass();
 	    
+
+		most_common_value = getMostCommonValue(data);
 	    makeTree(data);
 		
 	}
@@ -311,7 +314,7 @@ public class MyID3
 	    		return node_Successors[(int) instance.value(node_Attribute)].
 	        classifyInstance(instance);
 	    	else 
-	    		return 0.0;
+	    		return most_common_value;
 	    }
 	  }
 
