@@ -97,7 +97,7 @@ public class DriverWekaID3 {
 
         }
         //Pilih classifier
-        System.out.print("Pilih classifier yang akan digunakan (0: NB, 1: FFNN): ");
+        System.out.print("Pilih classifier yang akan digunakan (0: Id3 (Weka), 1: MyID3): ");
         int classifierChoice = scan.nextInt();
         Classifier classifier;
         if (classifierChoice == 0){
@@ -107,22 +107,6 @@ public class DriverWekaID3 {
             NumericToNominal ntn = new NumericToNominal();
         	ntn.setInputFormat(fileTrain);
           	fileTrain = Filter.useFilter(fileTrain, ntn);
-//            if (!filename.equals("iris")){
-//                //Nominal to Binary
-//                NominalToBinary ntb = new NominalToBinary();
-//                ntb.setInputFormat(fileTrain);
-//                fileTrain = Filter.useFilter(fileTrain, ntb);
-//                
-//                //Standardize
-//                Standardize nor = new Standardize();
-//                nor.setInputFormat(fileTrain);
-//                fileTrain = Filter.useFilter(fileTrain, nor);
-//                
-//                //NormalizeS
-//                Normalize nor1 = new Normalize();
-//                nor1.setInputFormat(fileTrain);
-//                fileTrain = Filter.useFilter(fileTrain, nor1);
-//            }
         }
        
         //Evaluate
@@ -140,20 +124,15 @@ public class DriverWekaID3 {
             switch (pilihan) {
                 case 1:
                     {
-                        if (classifierChoice == 0){
-                            Discretize filter = new Discretize();
-                            Instances filterRes;
+                        Discretize filter = new Discretize();
+                        Instances filterRes;
 
-                            //Algoritma
-                            filter.setInputFormat(fileTrain);
-                            filterRes = Filter.useFilter(fileTrain, filter);
-                            
-                            classifier.buildClassifier(filterRes);
-                            eval.evaluateModel(classifier, filterRes);
-                        } else {
-                            classifier.buildClassifier(fileTrain);
-                            eval.evaluateModel(classifier, fileTrain);
-                        }
+                        //Algoritma
+                        filter.setInputFormat(fileTrain);
+                        filterRes = Filter.useFilter(fileTrain, filter);
+                        
+                        classifier.buildClassifier(filterRes);
+                    	eval.evaluateModel(classifier, filterRes);
                         //OUTPUT
                         System.out.println(eval.toSummaryString("=== Stratified cross-validation ===\n" +"=== Summary ===",true));
                         System.out.println(eval.toClassDetailsString("=== Detailed Accuracy By Class ==="));
@@ -172,20 +151,15 @@ public class DriverWekaID3 {
                     }
                 case 2:
                     {
-                        if (classifierChoice == 0){
-                            Discretize filter = new Discretize();
-                            Instances filterRes;
+                        Discretize filter = new Discretize();
+                        Instances filterRes;
 
-                            //Algoritma
-                            filter.setInputFormat(fileTrain);
-                            filterRes = Filter.useFilter(fileTrain, filter);
-                            
-                            classifier.buildClassifier(filterRes);
-                            eval.crossValidateModel(classifier, filterRes, 10, new Random(1));
-                        } else {
-                            classifier.buildClassifier(fileTrain);
-                            eval.crossValidateModel(classifier, fileTrain, 10, new Random(1));
-                        }
+                        //Algoritma
+                        filter.setInputFormat(fileTrain);
+                        filterRes = Filter.useFilter(fileTrain, filter);
+                        
+                        classifier.buildClassifier(filterRes);
+                        eval.crossValidateModel(classifier, filterRes, 10, new Random(1));
                         
                         //OUTPUT
                         System.out.println(eval.toSummaryString("=== 10-fold-cross-validation ===\n",true));
@@ -209,20 +183,15 @@ public class DriverWekaID3 {
                         int testSize = fileTrain.numInstances() - trainSize;
                         Instances train = new Instances(fileTrain, 0, trainSize);
                         Instances test = new Instances(fileTrain, trainSize, testSize);
-                        if (classifierChoice == 0){
-                            Discretize filter = new Discretize();
-                            Instances filterRes;
+                        Discretize filter = new Discretize();
+                        Instances filterRes;
 
-                            //Algoritma
-                            filter.setInputFormat(fileTrain);
-                            filterRes = Filter.useFilter(fileTrain, filter);
-                            
-                            classifier.buildClassifier(filterRes);
-                            eval.evaluateModel(classifier, filterRes);
-                        } else {
-                            classifier.buildClassifier(train);
-                            eval.evaluateModel(classifier, test);
-                        }
+                        //Algoritma
+                        filter.setInputFormat(fileTrain);
+                        filterRes = Filter.useFilter(fileTrain, filter);
+                        
+                        classifier.buildClassifier(filterRes);
+                        eval.evaluateModel(classifier, filterRes);
                         //OUTPUT
                         System.out.println(eval.toSummaryString("=== Stratified cross-validation ===\n" +"=== Summary ===",true));
                         System.out.println(eval.toClassDetailsString("=== Detailed Accuracy By Class ==="));

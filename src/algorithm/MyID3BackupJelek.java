@@ -1,5 +1,7 @@
 package algorithm;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 
 import weka.classifiers.Classifier;
 import weka.classifiers.Sourcable;
@@ -12,18 +14,16 @@ import weka.core.RevisionUtils;
 import weka.core.TechnicalInformation;
 import weka.core.TechnicalInformationHandler;
 import weka.core.Utils;
-import weka.filters.Filter;
-import weka.filters.unsupervised.attribute.Remove;
 import weka.core.Capabilities.Capability;
 import weka.core.TechnicalInformation.Field;
 import weka.core.TechnicalInformation.Type;
 
-public class MyID3 
+public class MyID3BackupJelek 
 	extends Classifier 
 	implements TechnicalInformationHandler, Sourcable {
 	
 	/** The node's successors. */ 
-	private MyID3[] node_Successors;
+	private MyID3BackupJelek[] node_Successors;
 
 	/** Attribute used for splitting. */
 	private Attribute node_Attribute;
@@ -31,6 +31,8 @@ public class MyID3
 	/** Class value if node is leaf. */
 	private double node_ClassValue;
 	
+	/** Class distribution if node is leaf. */
+	private double[] node_Distribution;
 
 
 	@Override
@@ -59,7 +61,8 @@ public class MyID3
 	    data = new Instances(data);
 	    data.deleteWithMissingClass();
 	    
-	    makeTree(data);
+	    List<Attribute> list_attributes = new ArrayList<Attribute>();
+	    makeTree(data, list_attributes);
 		
 	}
 	
@@ -95,15 +98,12 @@ public class MyID3
 	private Instances[] splitData(Instances data, Attribute att) {
 	
 	  Instances[] split_data = new Instances[att.numValues()];
-	  System.out.println("attname : "+ att.name());
-	  System.out.println("numval : "+ att.numValues());
 	  for (int j = 0; j < att.numValues(); j++) {
 		  split_data[j] = new Instances(data, data.numInstances());
 	  }
 	  Enumeration instEnum = data.enumerateInstances();
 	  while (instEnum.hasMoreElements()) {
 	    Instance inst = (Instance) instEnum.nextElement();
-	    System.out.println("idx : "+(int) inst.value(att));
 	    split_data[(int) inst.value(att)].add(inst);
 	  }
 	  for (int i = 0; i < split_data.length; i++) {
@@ -113,26 +113,38 @@ public class MyID3
 	}
 
 	
-	private void makeTree(Instances data) throws Exception {
-//		System.out.println("DEBUG :: \nnumInstance"+data.numInstances()+"\nnumattr: "+data.numAttributes());
-//		Enumeration instEnum = data.enumerateAttributes();
-//		  while (instEnum.hasMoreElements()) {
-//			Attribute inst = (Attribute) instEnum.nextElement();
-//		    System.out.print(inst.name()+" , ");
-//		 }
-		//If all Examples are uniform, Return the single-node tree Root, with same label 
+	private void makeTree(Instances data, List<Attribute> list_attributes) throws Exception {
+		
+		//If all Examples are uniform, Return the single-node tree Root, with same label
+		System.out.println("Make Tree");
 		if (isUniformInstances(data)) {
 			node_ClassValue = data.instance(0).classValue(); 
 			node_Attribute = null;
+	    	node_Distribution = new double[data.numClasses()];
+	        Enumeration instEnum = data.enumerateInstances();
+	        while (instEnum.hasMoreElements()) {
+	          Instance inst = (Instance) instEnum.nextElement();
+	          node_Distribution[(int) inst.classValue()]++;
+	        }
+	        Utils.normalize(node_Distribution);
+
 			return;
 		}
 		// If Attributes is empty, Return the single-node tree Root,
 		// with label = most common value of ClassAtribute in Examples
 		else if (data.numAttributes() == 0) {
 	    	// Make this node as Leaf
-			node_ClassValue = getMostCommonValue(data); 
-//			node_ClassValue = Instance.missingValue();
+//			node_ClassValue = getMostCommonValue(data); 
+			node_ClassValue = Instance.missingValue();
 			node_Attribute = null;
+	    	node_Distribution = new double[data.numClasses()];
+	    	Enumeration instEnum = data.enumerateInstances();
+	        while (instEnum.hasMoreElements()) {
+	          Instance inst = (Instance) instEnum.nextElement();
+	          node_Distribution[(int) inst.classValue()]++;
+	        }
+	        Utils.normalize(node_Distribution);
+
 			return;
 	    }
 	    else {
@@ -140,33 +152,40 @@ public class MyID3
 	    	// Let decision attribute of node =  the attribute that best classifies Instances
 //	    	node_Attribute = getBestAttribute(data);
 	    	// Compute attribute with maximum information gain.
-	        double[] infoGains = new double[data.numAttributes()];
-	        Enumeration attEnum = data.enumerateAttributes();
-	        while (attEnum.hasMoreElements()) {
-	          Attribute att = (Attribute) attEnum.nextElement();
-	          infoGains[att.index()] = computeInfoGain(data, att);
-	        }
-	        node_Attribute = data.attribute(Utils.maxIndex(infoGains));
+	    	double[] infoGains = new double[list_attributes.size()];
 	        
+	        for (int i=0; i < list_attributes.size(); i++){
+	        	Attribute att = (Attribute) list_attributes.get(i);
+	        	infoGains[i] = computeInfoGain(data, att);
+	        }
+	        
+	        node_Attribute = data.attribute(Utils.maxIndex(infoGains));
+	        System.out.println("nodeAttribute : " + node_Attribute);
 	    	// For each possible value of node_Attribute
 	    	Instances[] subset_data = splitData(data,node_Attribute);
-	    	node_Successors = new MyID3[subset_data.length];
+	    	node_Successors = new MyID3BackupJelek[subset_data.length];
 	    	for (int i=0; i < subset_data.length; i++) {
-    			node_Successors[i] = new MyID3();
+    			node_Successors[i] = new MyID3BackupJelek();
 	    		if (subset_data[i].numInstances() == 0){
+	    			System.out.println("nodsuc at "+i +" leafnode");
 	    			// Add a leaf node with label = most common value of ClassAtribute in Examples
-	    			node_Successors[i].node_ClassValue = getMostCommonValue(subset_data[i]); 
-//	    			node_Successors[i].node_ClassValue = Instance.missingValue();
+//	    			node_Successors[i].node_ClassValue = getMostCommonValue(subset_data[i]); 
+	    			node_Successors[i].node_ClassValue = Instance.missingValue();
 	    			node_Successors[i].node_Attribute = null;
+	    			node_Successors[i].node_Distribution = new double[subset_data[i].numClasses()];
+	    			Enumeration instEnum = subset_data[i].enumerateInstances();
+	    	        while (instEnum.hasMoreElements()) {
+	    	          Instance inst = (Instance) instEnum.nextElement();
+	    	          node_Successors[i].node_Distribution[(int) inst.classValue()]++;
+	    	        }
+	    	        Utils.normalize(node_Successors[i].node_Distribution);
 	    			return;
 	    		}
 	    		else {
+	    			System.out.println("nodsuc at "+i+" createbranch");
 	    			// Add a subtree ID3(subset_data[i])
-//	    			Remove remove = new Remove();
-//	    			remove.setAttributeIndices(node_Attribute.index()+"");
-//	    			remove.setInputFormat(subset_data[i]);
-//	    			Instances instNew = Filter.useFilter(subset_data[i], remove);
-	    			node_Successors[i].makeTree(subset_data[i]);
+	    			list_attributes.remove(node_Attribute);
+	    			node_Successors[i].makeTree(subset_data[i], list_attributes);
 	    		}
 	    	}
 	    	
@@ -174,20 +193,19 @@ public class MyID3
 		
 	}
 
-	private double getMostCommonValue(Instances data) {
+	private String getMostCommonValue(Instances data) {
 		int[] counter = new int[data.numClasses()];
-		double[] target = new double[data.numClasses()];
+		String[] target = new String[data.numClasses()];
 		Enumeration en_val = data.classAttribute().enumerateValues();
 		int k = 0;
 		while (en_val.hasMoreElements()){
-			Object temp = en_val.nextElement();
-			target[k] = (double) k;
+			target[k] = (String) en_val.nextElement();
 			k++;
 		}
 		
 		for (int i = 0; i < data.numInstances(); i++){
 			for (int j = 0; j < target.length; j++){
-				if (data.instance(i).classValue() == target[j]){
+				if (data.instance(i).stringValue(i) == target[j]){
 					counter[j]++;
 					break;
 				}
@@ -222,15 +240,15 @@ public class MyID3
 		}
 	}
 
-	private Attribute getBestAttribute(Instances data) throws Exception {
-		// Compute attribute with maximum information gain.
-	    double[] infoGains = new double[data.numAttributes()];
-	    Enumeration attEnum = data.enumerateAttributes();
-	    while (attEnum.hasMoreElements()) {
-	      Attribute att = (Attribute) attEnum.nextElement();
-	      infoGains[att.index()] = computeInfoGain(data, att);
-	    }
-	    return data.attribute(Utils.maxIndex(infoGains));
+	private double[] getInfoGains(Instances data) throws Exception {
+		double[] infoGains = new double[data.numAttributes()];
+        Enumeration attEnum = data.enumerateAttributes();
+        while (attEnum.hasMoreElements()) {
+          Attribute att = (Attribute) attEnum.nextElement();
+          infoGains[att.index()] = computeInfoGain(data, att);
+        }
+        
+        return infoGains;
 	}
 
 	 /**
@@ -296,24 +314,11 @@ public class MyID3
 	                                                   + "please.");
 	    }
 	    if (node_Attribute == null) {
-
-	    	System.out.println("Instance : "+instance);
-	    	System.out.println("Class : "+node_ClassValue);
 	      return node_ClassValue;
 	    } else {
-	    	System.out.println("Instance : "+instance);
-	    	System.out.println("idx : "+(int) instance.value(node_Attribute));
-	    	
-	    	for (int i=0 ; i<node_Successors.length; i++){
-	    		System.out.println(i+" : "+node_Successors[i]);
-	    	}
-	    	if (node_Successors[(int) instance.value(node_Attribute)] != null)
-	    		return node_Successors[(int) instance.value(node_Attribute)].
+	      return node_Successors[(int) instance.value(node_Attribute)].
 	        classifyInstance(instance);
-	    	else 
-	    		return 0.0;
 	    }
 	  }
-
-
+	  
 }
