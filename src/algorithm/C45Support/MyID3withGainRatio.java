@@ -11,6 +11,8 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.NoSupportForMissingValuesException;
 import weka.core.Utils;
+import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.NumericToNominal;
 
 public class MyID3withGainRatio extends MyID3 {
 	
@@ -73,7 +75,7 @@ public class MyID3withGainRatio extends MyID3 {
 	  return split_data;
 	}
 	
-	private void makeTree(Instances data) throws Exception {
+	public void makeTree(Instances data) throws Exception {
 		//If all Examples are uniform, Return the single-node tree Root, with same label 
 		if (isUniformInstances(data)) {
 			node_ClassValue = data.instance(0).classValue(); 
@@ -121,44 +123,69 @@ public class MyID3withGainRatio extends MyID3 {
 		
 	}
 	
+//	/**
+//	 * Classifies a given test instance using the decision tree.
+//	 *
+//	 * @param instance the instance to be classified
+//	 * @return the classification
+//	 * @throws NoSupportForMissingValuesException if instance has missing values
+//	 */
+//	public double classifyInstance(Instance instance) {
+//
+//		if (node_Attribute == null) {
+//			return node_ClassValue;
+//	    } else {
+//	    	if (instance.isMissing(node_Attribute)) {
+//	    		return node_ClassValue;
+//	    	} else {
+//		    	if (node_Successors != null)
+//		    		return node_Successors[(int) instance.value(node_Attribute)].
+//		    					classifyInstance(instance);
+//		    	else 
+//		    		return most_common_value;
+//	    	}
+//	    }
+//	}
+	
 	/**
-	 * Classifies a given test instance using the decision tree.
-	 *
-	 * @param instance the instance to be classified
-	 * @return the classification
-	 * @throws NoSupportForMissingValuesException if instance has missing values
-	 */
-	public double classifyInstance(Instance instance) {
+	   * Classifies a given test instance using the decision tree.
+	   *
+	   * @param instance the instance to be classified
+	   * @return the classification
+	   * @throws NoSupportForMissingValuesException if instance has missing values
+	   */
+	  public double classifyInstance(Instance instance) 
+	    throws NoSupportForMissingValuesException {
 
-		if (node_Attribute == null) {
-			return node_ClassValue;
-	    } else {
-	    	if (instance.isMissing(node_Attribute)) {
-	    		return node_Successors[(int) instance.value(node_Attribute)].most_common_value;
-	    	} else {
-		    	if (node_Successors != null)
-		    		return node_Successors[(int) instance.value(node_Attribute)].
-		    					classifyInstance(instance);
-		    	else 
-		    		return most_common_value;
-	    	}
+	    if (instance.hasMissingValue()) {
+	      throw new NoSupportForMissingValuesException("Id3: no missing values, "
+	                                                   + "please.");
 	    }
-	}
+	    if (node_Attribute == null) {
+	      return node_ClassValue;
+	    } else {
+	    	if (node_Successors[(int) instance.value(node_Attribute)] != null)
+	    		return node_Successors[(int) instance.value(node_Attribute)].
+	    					classifyInstance(instance);
+	    	else 
+	    		return most_common_value;
+	    }
+	  }
 	  
 	public static void main(String[] args) throws Exception {
-		BufferedReader breader = new BufferedReader(new FileReader("arff//weather.nominal.arff"));
+		BufferedReader breader = new BufferedReader(new FileReader("arff//iris.arff"));
 		Instances data = new Instances (breader);
 		data.setClassIndex(data.numAttributes() - 1);
 		MyID3withGainRatio decision_tree = new MyID3withGainRatio();
-		decision_tree.buildClassifier(data);
-		
-		for (int i = 0; i < data.numInstances(); i++) {
-			System.out.println(data.instance(i) + " : " + data.instance(i).classValue());
-		}
-		System.out.println();
+		NumericToNominal ntn = new NumericToNominal();
+    	ntn.setInputFormat(data);
+      	data = Filter.useFilter(data, ntn);
 		
     	Evaluation eval = new Evaluation(data);
-		eval .evaluateModel(decision_tree, data);
+		
+		decision_tree.buildClassifier(data);
+		
+		eval.evaluateModel(decision_tree, data);
 		
 		//OUTPUT
         System.out.println(eval.toSummaryString("=== Stratified cross-validation ===\n" +"=== Summary ===",true));
