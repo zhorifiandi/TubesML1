@@ -8,6 +8,7 @@ import java.io.ObjectOutputStream;
 import java.util.Random;
 import java.util.Scanner;
 
+import algorithm.MyC45;
 import algorithm.MyID3;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
@@ -30,7 +31,7 @@ import weka.classifiers.trees.j48.*;
  *
  * @author user-ari
  */
-public class DriverWekaID3 {
+public class DriverWekaC45 {
     
    static void saveModel(Classifier C, String namaFile) throws Exception {
         //SAVE 
@@ -97,13 +98,13 @@ public class DriverWekaID3 {
 
         }
         //Pilih classifier
-        System.out.print("Pilih classifier yang akan digunakan (0: Id3 (Weka), 1: MyID3): ");
+        System.out.print("Pilih classifier yang akan digunakan (0: j48 (Weka), 1: MyC45): ");
         int classifierChoice = scan.nextInt();
         Classifier classifier;
         if (classifierChoice == 0){
-            classifier = new Id3();
+            classifier = new J48();
         } else {    
-            classifier = new MyID3();
+            classifier = new MyC45();
             NumericToNominal ntn = new NumericToNominal();
         	ntn.setInputFormat(fileTrain);
           	fileTrain = Filter.useFilter(fileTrain, ntn);
@@ -124,15 +125,9 @@ public class DriverWekaID3 {
             switch (pilihan) {
                 case 1:
                     {
-                        Discretize filter = new Discretize();
-                        Instances filterRes;
-
-                        //Algoritma
-                        filter.setInputFormat(fileTrain);
-                        filterRes = Filter.useFilter(fileTrain, filter);
                         
-                        classifier.buildClassifier(filterRes);
-                    	eval.evaluateModel(classifier, filterRes);
+                        classifier.buildClassifier(fileTrain);
+                    	eval.evaluateModel(classifier, fileTrain);
                         //OUTPUT
                         System.out.println(eval.toSummaryString("=== Stratified cross-validation ===\n" +"=== Summary ===",true));
                         System.out.println(eval.toClassDetailsString("=== Detailed Accuracy By Class ==="));
@@ -151,15 +146,9 @@ public class DriverWekaID3 {
                     }
                 case 2:
                     {
-                        Discretize filter = new Discretize();
-                        Instances filterRes;
-
-                        //Algoritma
-                        filter.setInputFormat(fileTrain);
-                        filterRes = Filter.useFilter(fileTrain, filter);
                         
-                        classifier.buildClassifier(filterRes);
-                        eval.crossValidateModel(classifier, filterRes, 10, new Random(1));
+                        classifier.buildClassifier(fileTrain);
+                        eval.crossValidateModel(classifier, fileTrain, 10, new Random(1));
                         
                         //OUTPUT
                         System.out.println(eval.toSummaryString("=== 10-fold-cross-validation ===\n",true));
@@ -184,22 +173,8 @@ public class DriverWekaID3 {
                         Instances train = new Instances(fileTrain, 0, trainSize);
                         Instances test = new Instances(fileTrain, trainSize, testSize);
                         
-                        Discretize filter = new Discretize();
-                        Instances filterRes;
-
-                        //Algoritma
-                        filter.setInputFormat(train);
-                        filterRes = Filter.useFilter(train, filter);
-                        
-                        Discretize filter2 = new Discretize();
-                        Instances filterRes2;
-
-                        //Algoritma
-                        filter2.setInputFormat(test);
-                        filterRes2 = Filter.useFilter(test, filter);
-                        
-                        classifier.buildClassifier(filterRes);
-                        eval.evaluateModel(classifier, filterRes2);
+                        classifier.buildClassifier(train);
+                        eval.evaluateModel(classifier, test);
                         //OUTPUT
                         System.out.println(eval.toSummaryString("=== Stratified cross-validation ===\n" +"=== Summary ===",true));
                         System.out.println(eval.toClassDetailsString("=== Detailed Accuracy By Class ==="));
