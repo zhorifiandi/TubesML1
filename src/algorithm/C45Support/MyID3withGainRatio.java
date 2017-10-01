@@ -1,54 +1,73 @@
 package algorithm.C45Support;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.util.Enumeration;
 
 import algorithm.MyID3;
 import weka.core.Attribute;
+import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.Utils;
 
 public class MyID3withGainRatio extends MyID3 {
 	private MyID3withGainRatio[] node_Successors;
-	
-//	private double computeInfoGain(Instances data, Attribute att) 
-//	   throws Exception {
-//
-//	   double infoGain = computeEntropy(data);
-//	   Instances[] split_data = splitData(data, att);
-//	   for (int j = 0; j < att.numValues(); j++) {
-//	     if (split_data[j].numInstances() > 0) {
-//	       infoGain -= ((double) split_data[j].numInstances() /
-//	                    (double) data.numInstances()) *
-//	         computeEntropy(split_data[j]);
-//	     }
-//	   }
-//	   return infoGain;
-//	 }
-
-//	^^^ Contoh, itu yg ID3 biasa 
-	
-	
+		
 	private double computeInfoGain(Instances data, Attribute att) 
 			   throws Exception {
-			//PAKE GAIN RATIO
-			//IMPLEMENT INI FAIQ
-			//Jangan lupa handle kalo continuous value
-			
-			/*
-			 * Pseudo code:
-			 * 
-			 * for each attribute:
-			 * 		if (att.type == Attribute.NUMERIC) {
-			 * 			rumus ngitung continue
-			 * 		}
-			 * 		else {
-			 * 			GainRatio di buku / slide
-			 * 		}
-			 * 
-			 * 
-			 */
-			
-			return 0;
+		
+		double infoGain = computeEntropy(data);
+		Instances[] split_data = splitData(data, att);
+		
+		for (int j = 0; j < att.numValues(); j++) {
+			if (split_data[j].numInstances() > 0) {
+				double missNum = 0;
+				for (int k = 0; k < split_data[j].numInstances(); k++) {
+					if (split_data[j].instance(k).hasMissingValue()) {
+						missNum++;
+					}
+				}
+				double normalNum = split_data[j].numInstances() - missNum;
+				double weight = normalNum + (normalNum * missNum / (double) data.numInstances());
+				infoGain -= (weight / (double) data.numInstances()) *
+						computeEntropy(split_data[j]);
+		    }
+		}
+		
+		infoGain = infoGain / computeEntropy(data);
+		
+		return infoGain;
+	}
+	  
+	
+	/**
+	* Splits a dataset according to the values of a nominal attribute.
+	*
+	* @param data the data which is to be split
+	* @param att the attribute to be used for splitting
+	* @return the sets of instances produced by the split
+	*/
+	private Instances[] splitData(Instances data, Attribute att) {
+	
+	  Instances[] split_data = new Instances[att.numValues()];
+	  for (int j = 0; j < att.numValues(); j++) {
+		  split_data[j] = new Instances(data, data.numInstances());
+	  }
+	  Enumeration instEnum = data.enumerateInstances();
+	  while (instEnum.hasMoreElements()) {
+	    Instance inst = (Instance) instEnum.nextElement();
+	    if (!inst.hasMissingValue()) {
+	    	split_data[(int) inst.value(att)].add(inst);
+	    } else {
+	    	for (int i = 0; i < split_data.length; i++) {
+	    		split_data[i].add(inst);
+	    	}
+	    }
+	  }
+	  for (int i = 0; i < split_data.length; i++) {
+		  split_data[i].compactify();
+	  }
+	  return split_data;
 	}
 	
 	private void makeTree(Instances data) throws Exception {
@@ -96,6 +115,22 @@ public class MyID3withGainRatio extends MyID3 {
 	    	}
 	    	
 	    }
+		
+	}
+	
+	public static void main(String[] args) throws Exception {
+		BufferedReader breader = new BufferedReader(new FileReader("arff//weather.nominal.arff"));
+		Instances data = new Instances (breader);
+		data.setClassIndex(data.numAttributes() - 1);
+		MyID3withGainRatio decision_tree = new MyID3withGainRatio();
+		decision_tree.buildClassifier(data);
+		
+		for (int i = 0; i < data.numInstances(); i++) {
+			System.out.println(data.instance(i) + " : " + data.instance(i).classValue());
+		}
+		System.out.println();
+		
+		decision_tree.makeTree(data);
 		
 	}
 
