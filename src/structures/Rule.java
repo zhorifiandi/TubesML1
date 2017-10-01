@@ -1,17 +1,21 @@
 package structures;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import weka.core.Attribute;
 
-public class Rule {
-	private List<Attribute> preconditions;
+public class Rule implements Serializable{
+	private List<Edge> preconditions;
 	private double class_value;
 	
 	public Rule(){
-		preconditions = new ArrayList<Attribute>();
+		preconditions = new ArrayList<Edge>();
 		setClass_value(0);
+	}
+
+	public List<Edge> getPreconditions(){
+		return preconditions;
 	}
 
 	public double getClass_value() {
@@ -22,11 +26,11 @@ public class Rule {
 		this.class_value = class_value;
 	}
 
-	public void addPrecondition(Attribute att){
+	public void addPrecondition(Edge att){
 		preconditions.add(att);
 	}
 	
-	public void delPrecondition(Attribute att){
+	public void delPrecondition(Edge att){
 		preconditions.remove(att);
 	}
 	
