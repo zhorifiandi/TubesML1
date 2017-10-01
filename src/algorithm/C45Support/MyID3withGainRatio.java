@@ -8,9 +8,11 @@ import algorithm.MyID3;
 import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.NoSupportForMissingValuesException;
 import weka.core.Utils;
 
 public class MyID3withGainRatio extends MyID3 {
+	
 	private MyID3withGainRatio[] node_Successors;
 		
 	private double computeInfoGain(Instances data, Attribute att) 
@@ -118,6 +120,30 @@ public class MyID3withGainRatio extends MyID3 {
 		
 	}
 	
+	/**
+	 * Classifies a given test instance using the decision tree.
+	 *
+	 * @param instance the instance to be classified
+	 * @return the classification
+	 * @throws NoSupportForMissingValuesException if instance has missing values
+	 */
+	public double classifyInstance(Instance instance) {
+
+		if (node_Attribute == null) {
+			return node_ClassValue;
+	    } else {
+	    	if (instance.isMissing(node_Attribute)) {
+	    		return node_Successors[(int) instance.value(node_Attribute)].most_common_value;
+	    	} else {
+		    	if (node_Successors[(int) instance.value(node_Attribute)] != null)
+		    		return node_Successors[(int) instance.value(node_Attribute)].
+		    					classifyInstance(instance);
+		    	else 
+		    		return most_common_value;
+	    	}
+	    }
+	}
+	  
 	public static void main(String[] args) throws Exception {
 		BufferedReader breader = new BufferedReader(new FileReader("arff//weather.nominal.arff"));
 		Instances data = new Instances (breader);
