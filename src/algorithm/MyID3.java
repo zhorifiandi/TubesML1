@@ -32,6 +32,24 @@ public class MyID3
 	protected double node_ClassValue;
 	
 	private double most_common_value;
+
+	private Attribute node_ClassAttribute;
+
+	public MyID3[] getNode_Successors() {
+		return node_Successors;
+	}
+
+	public Attribute getNode_Attribute(){
+		return node_Attribute;
+	}
+
+	public double getMost_common_value(){
+		return most_common_value;
+	}
+
+	public double getNode_ClassValue(){
+		return node_ClassValue;
+	}
 	
 
 	@Override
@@ -49,6 +67,37 @@ public class MyID3
 	    result.setValue(Field.TITLE, "Custom ID3");
 	    result.setValue(Field.JOURNAL, "Machine Learning");
 	    return result;
+	}
+
+	public String toString() {
+
+		if ((node_Successors == null)) {
+			return "Id3: No model built yet.";
+		}
+		return "Id3\n\n" + toString(0);
+	}
+
+	private String toString(int level) {
+
+		StringBuffer text = new StringBuffer();
+
+		if (node_Attribute == null) {
+			if (Instance.isMissingValue(node_ClassValue)) {
+				text.append(": null");
+			} else {
+				text.append(": " + node_ClassAttribute.value((int) node_ClassValue));
+			}
+		} else {
+			for (int j = 0; j < node_Attribute.numValues(); j++) {
+				text.append("\n");
+				for (int i = 0; i < level; i++) {
+					text.append("|  ");
+				}
+				text.append(node_Attribute.name() + " = " + node_Attribute.value(j));
+				text.append(node_Successors[j].toString(level + 1));
+			}
+		}
+		return text.toString();
 	}
 
 	@Override
@@ -114,7 +163,8 @@ public class MyID3
 
 	
 	private void makeTree(Instances data) throws Exception {
-		//If all Examples are uniform, Return the single-node tree Root, with same label 
+		//If all Examples are uniform, Return the single-node tree Root, with same label
+		node_ClassAttribute = data.classAttribute();
 		if (isUniformInstances(data)) {
 			node_ClassValue = data.instance(0).classValue(); 
 			node_Attribute = null;
