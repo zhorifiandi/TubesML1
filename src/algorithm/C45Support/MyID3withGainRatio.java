@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.util.Enumeration;
 
 import algorithm.MyID3;
+import weka.classifiers.Evaluation;
 import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -135,7 +136,7 @@ public class MyID3withGainRatio extends MyID3 {
 	    	if (instance.isMissing(node_Attribute)) {
 	    		return node_Successors[(int) instance.value(node_Attribute)].most_common_value;
 	    	} else {
-		    	if (node_Successors[(int) instance.value(node_Attribute)] != null)
+		    	if (node_Successors != null)
 		    		return node_Successors[(int) instance.value(node_Attribute)].
 		    					classifyInstance(instance);
 		    	else 
@@ -156,7 +157,14 @@ public class MyID3withGainRatio extends MyID3 {
 		}
 		System.out.println();
 		
-		decision_tree.makeTree(data);
+    	Evaluation eval = new Evaluation(data);
+		eval .evaluateModel(decision_tree, data);
+		
+		//OUTPUT
+        System.out.println(eval.toSummaryString("=== Stratified cross-validation ===\n" +"=== Summary ===",true));
+        System.out.println(eval.toClassDetailsString("=== Detailed Accuracy By Class ==="));
+        System.out.println(eval.toMatrixString("===Confusion matrix==="));
+        
 		
 	}
 
